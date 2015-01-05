@@ -18,6 +18,9 @@ blend:
 	mov ebx, DWORD [ebp+8]  ;adres poczatku a
 	mov eax, DWORD [ebx+10] ;offset a
 	add ebx, eax    ;adres pixeli(danych) a
+	mov eax, DWORD [ebp+20] ;x
+	imul eax, 3
+	add ebx, eax
     push ebx    ;[ebp-12]
 
     mov ebx, DWORD [ebp+12]  ;adres poczatku b
@@ -55,7 +58,27 @@ blend:
     add ebx, edx    ;adres ostatniego bajtu pixeli w lini
     push ebx    ;[ebp-32]
 
-    mov ecx, 0  ;licznik
+    mov ebx, DWORD [ebp+8]  ;adres poczatku a
+    mov eax, DWORD [ebx+18]  ;szerokosc a
+    imul eax, 3 ;zamiana szerokosci, pixele na bajty
+    push eax    ;[ebp-36]
+    mov edx, DWORD [ebp-24] ;padding a
+    add eax, edx    ;dlugosc lini z paddingiem
+    mov edx, [ebp+24]   ;y
+    imul eax, edx   ;przesuniecie w pionie
+    mov	ebx, DWORD [ebp-12] ;poczatek danych a
+    add ebx, eax    ;adres po przesunieciu w dol
+    mov [ebp-12], ebx
+
+
+    mov ebx, DWORD [ebp+12]  ;adres poczatku b
+    mov eax, DWORD [ebx+18]  ;szerokosc b
+    imul eax, 3 ;zamiana szerokosci, pixele na bajty
+    push eax    ;[ebp-40]
+
+    mov ebx, DWORD [ebp+8]  ;adres poczatku a
+	mov eax, DWORD [ebx+10] ;offset a
+    mov ecx, eax  ;licznik
 
 loop1:
     mov	ebx, DWORD [ebp-12] ;poczatek danych a
@@ -74,7 +97,7 @@ loop1:
     fsubp   ;1-alfa
 
     inc ebx
-    move [ebp-12], ebx
+    mov [ebp-12], ebx
 
     mov ebx, DWORD [ebp-16] ;poczatek danych b
     ;add ebx, ecx
@@ -86,16 +109,64 @@ loop1:
     add eax, edx    ;nowa wartosc koloru
 
     inc ebx
-    move [ebp-16], ebx
+    mov [ebp-16], ebx
 
     mov ebx, DWORD [ebp+12] ;*d
     add ebx, ecx
     mov BYTE [ebx], al  ;zapis
     inc ecx
+
+    mov eax, DWORD [ebp-12] ;aktualny wskaznik a
+    mov ebx, DWORD [ebp-24] ;aktualny koniec lini
+    cmp eax, ebx
+    jge przeskocz_padding
+
+    mov eax, DWORD [ebp-16] ;aktualny wskaznik b
+    mov ebx, DWORD [ebp-32] ;aktualny koniec lini
+    cmp eax, ebx
+    jge przeskocz_padding
+
+    mov eax, DWORD [ebp-12] ;aktualny wskaznik a
+    mov ebx, DWORD [ebp-4]  ;koniec a
+    cmp eax, ebx
+    jg koniec  ;jesli skonczy sie plik podstawowy, to koniec
+
+    mov eax, DWORD [ebp-16] ;aktualny wskaznik b
+    mov ebx, DWORD [ebp-8]  ;koniec b
+    cmp eax, ebx
+    jle loop1   ;jesli nie skonczyl sie jeszcze plik nakladany, to powtarzaj
+
+    jmp koniec  ;koniec funkcji
+
+przeskocz_padding:
+    mov ebx, DWORD [ebp-24] ;aktualny koniec lini a
+    add ebx, DWORD [ebp-20] ;+ padding
+    mov eax, DWORD [ebp+20] ;x
+	add ebx, eax
+    inc ebx
+    mov [ebp-12], ebx
+
+    mov ebx, DWORD [ebp-32] ;aktualny koniec lini b
+    add ebx, DWORD [ebp-28] ;+ padding
+    inc ebx
+    mov [ebp-16], ebx
+
+    mov ebx, DWORD [ebp-24] ;aktualny koniec lini a
+    mov eax, DWORD [ebp-36] ;dlugosc lini w bajtach
+    add ebx, eax    ;nowy adres konca linii
+    mov [ebp-24], ebx
+
+    mov ebx, DWORD [ebp-32] ;aktualny koniec lini b
+    mov eax, DWORD [ebp-40] ;dlugosc lini w bajtach
+    add ebx, eax    ;nowy adres konca linii
+    mov [ebp-32], ebx
+
     jmp loop1
+
 
 koniec:
 	mov	eax, 0		;return 0
+	mov esp, ebp
 	pop	ebp
 	ret
 

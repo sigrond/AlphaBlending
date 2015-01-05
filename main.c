@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-int blend(char* a,char* b,double c,char* d);
+int blend(char* a,char* b,float c,char* d, int x, int y);
 
 int main()
 {
@@ -11,8 +12,8 @@ int main()
     char* m1;
     char* m2;
     char* result;
-    double alpha=0.4;
-    //int x,y;
+    float alpha=0.4;
+    int x=0,y=0;//w pixelach
     file1=fopen("test1.bmp", "rb");
     file2=fopen("test2.bmp", "rb");
     fseek(file1,0,SEEK_END);
@@ -23,11 +24,13 @@ int main()
     rewind(file2);
     m1=(char*)malloc(sizeof(char)*size1);
     m2=(char*)malloc(sizeof(char)*size2);
-    result=(char*)malloc(sizeof(char)*(size1>size2?size1:size2));
+    //result=(char*)malloc(sizeof(char)*(size1>size2?size1:size2));
+    result=(char*)malloc(sizeof(char)*size1);
     fread(m1,sizeof(char),size1,file1);
     fread(m2,sizeof(char),size2,file2);
     fclose(file1);
     fclose(file2);
+    memcpy(result,m1,sizeof(char)*size1,x,y);
     blend(m1,m2,alpha,result);
     return 0;
 }
