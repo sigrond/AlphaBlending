@@ -30,7 +30,7 @@ int main()
     fread(m2,sizeof(char),size2,file2);
     fclose(file1);
     fclose(file2);
-    memcpy(result,m1,sizeof(char)*size1,x,y);
-    blend(m1,m2,alpha,result);
+    memcpy(result,m1,sizeof(char)*size1);
+    blend(m1,m2,alpha,result,x,y);
     return 0;
 }

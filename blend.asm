@@ -85,15 +85,15 @@ loop1:
     ;add ebx, ecx    ;wlasciwa komorka
     mov al, BYTE [ebx]  ;weź bit koloru
     and eax, 0xFF    ;maska
-    fild eax    ;bajt koloru na stos FPU
+    fild DWORD [eax]    ;bajt koloru na stos FPU
     mov eax, DWORD [ebp+16] ;alfa
-    fld eax ;(float)alfa na stos FPU
+    fld DWORD [eax] ;(float)alfa na stos FPU
     fmulp   ;mnozenie- wynik na stos FPU
-    fistp edx   ;zdjecie ze stosu jako int
+    fistp DWORD [edx]   ;zdjecie ze stosu jako int
 
     fld1    ;1 na stos
     mov eax, DWORD [ebp+16] ;alfa
-    fld eax ;(float)alfa na stos FPU
+    fld DWORD [eax] ;(float)alfa na stos FPU
     fsubp   ;1-alfa
 
     inc ebx
@@ -103,9 +103,9 @@ loop1:
     ;add ebx, ecx
     mov al, BYTE [ebx]  ;weź bit koloru
     and eax, 0xFF    ;maska
-    fild eax    ;bajt koloru na stos FPU
+    fild DWORD [eax]    ;bajt koloru na stos FPU
     fmulp   ;mnozenie- wynik na stos FPU
-    fistp eax   ;zdjecie ze stosu jako int
+    fistp DWORD [eax]   ;zdjecie ze stosu jako int
     add eax, edx    ;nowa wartosc koloru
 
     inc ebx
