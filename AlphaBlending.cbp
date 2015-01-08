@@ -13,8 +13,7 @@
 				<Option compiler="copy_of_gnu_gcc_compiler_for_pri" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="ASMBIN=nasm" />
-					<Add option="$(ASMBIN) -o blend.o -f elf -l blend.lst blend.asm" />
+					<Add option="-f win32 blend.asm -l blend.lst -o blend.o" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />

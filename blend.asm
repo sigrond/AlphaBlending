@@ -1,7 +1,7 @@
 section	.text
-global  blend
+global  _blend
 
-blend:
+_blend:
     push ebp
 	mov ebp, esp
 
@@ -18,8 +18,9 @@ blend:
 	mov ebx, DWORD [ebp+8]  ;adres poczatku a
 	mov eax, DWORD [ebx+10] ;offset a
 	add ebx, eax    ;adres pixeli(danych) a
-	mov eax, DWORD [ebp+20] ;x
-	imul eax, 3
+	mov eax, DWORD [ebp+24] ;x
+load_x:
+	imul eax, 3    ;ilosc pixeli na ilosc bajtow
 	add ebx, eax
     push ebx    ;[ebp-12]
 
@@ -64,7 +65,8 @@ blend:
     push eax    ;[ebp-36]
     mov edx, DWORD [ebp-24] ;padding a
     add eax, edx    ;dlugosc lini z paddingiem
-    mov edx, [ebp+24]   ;y
+load_y:
+    mov edx, [ebp+28]   ;y
     imul eax, edx   ;przesuniecie w pionie
     mov	ebx, DWORD [ebp-12] ;poczatek danych a
     add ebx, eax    ;adres po przesunieciu w dol
@@ -80,20 +82,25 @@ blend:
 	mov eax, DWORD [ebx+10] ;offset a
     mov ecx, eax  ;licznik
 
+    mov eax, 0
+    push eax    ;[ebp-44]
+
 loop1:
     mov	ebx, DWORD [ebp-12] ;poczatek danych a
-    ;add ebx, ecx    ;wlasciwa komorka
+    mov eax, 0
     mov al, BYTE [ebx]  ;weź bit koloru
     and eax, 0xFF    ;maska
-    fild DWORD [eax]    ;bajt koloru na stos FPU
-    mov eax, DWORD [ebp+16] ;alfa
-    fld DWORD [eax] ;(float)alfa na stos FPU
+
+    mov [ebp-44], eax
+    fild DWORD [ebp-44]    ;bajt koloru na stos FPU
+    fld DWORD [ebp+16] ;(float)alfa na stos FPU
     fmulp   ;mnozenie- wynik na stos FPU
-    fistp DWORD [edx]   ;zdjecie ze stosu jako int
+    ;fistp DWORD [ebp-44]   ;zdjecie ze stosu jako int
+    ;mov edx, DWORD [ebp-44]
 
     fld1    ;1 na stos
-    mov eax, DWORD [ebp+16] ;alfa
-    fld DWORD [eax] ;(float)alfa na stos FPU
+    ;mov eax, DWORD [ebp+16] ;alfa
+    fld DWORD [ebp+16] ;(float)alfa na stos FPU
     fsubp   ;1-alfa
 
     inc ebx
@@ -101,17 +108,24 @@ loop1:
 
     mov ebx, DWORD [ebp-16] ;poczatek danych b
     ;add ebx, ecx
+    mov eax, 0
     mov al, BYTE [ebx]  ;weź bit koloru
     and eax, 0xFF    ;maska
-    fild DWORD [eax]    ;bajt koloru na stos FPU
+    mov [ebp-44], eax
+    fild DWORD [ebp-44]    ;bajt koloru na stos FPU
     fmulp   ;mnozenie- wynik na stos FPU
-    fistp DWORD [eax]   ;zdjecie ze stosu jako int
-    add eax, edx    ;nowa wartosc koloru
+    ;mov [ebp-44], edx
+    faddp   ;dodanie
+    ;fistp DWORD [eax]   ;zdjecie ze stosu jako int
+    fistp DWORD [ebp-44]   ;zdjecie ze stosu jako int
+    ;add eax, edx    ;nowa wartosc koloru
+    mov eax, DWORD [ebp-44]
+
 
     inc ebx
     mov [ebp-16], ebx
 
-    mov ebx, DWORD [ebp+12] ;*d
+    mov ebx, DWORD [ebp+20] ;*d
     add ebx, ecx
     mov BYTE [ebx], al  ;zapis
     inc ecx
@@ -141,7 +155,7 @@ loop1:
 przeskocz_padding:
     mov ebx, DWORD [ebp-24] ;aktualny koniec lini a
     add ebx, DWORD [ebp-20] ;+ padding
-    mov eax, DWORD [ebp+20] ;x
+    mov eax, DWORD [ebp+24] ;x
 	add ebx, eax
     inc ebx
     mov [ebp-12], ebx

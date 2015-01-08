@@ -6,6 +6,7 @@ int blend(char* a,char* b,float c,char* d, int x, int y);
 
 int main()
 {
+    printf("start blend0");
     FILE* file1;
     FILE* file2;
     long int size1, size2;
@@ -31,6 +32,7 @@ int main()
     fclose(file1);
     fclose(file2);
     memcpy(result,m1,sizeof(char)*size1);
+    printf("start blend");
     blend(m1,m2,alpha,result,x,y);
     return 0;
 }
