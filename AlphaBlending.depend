@@ -1,5 +1,6 @@
 # depslib dependency file v1.0
-1420375176 source:f:\moje dokumenty\arko\alphablending\main.c
+1420741112 source:f:\moje dokumenty\arko\alphablending\main.c
 	<stdio.h>
 	<stdlib.h>
+	<string.h>
 

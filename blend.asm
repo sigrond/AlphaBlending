@@ -1,7 +1,7 @@
 section	.text
-global  _blend
+global  blend
 
-_blend:
+blend:
     push ebp
 	mov ebp, esp
 
@@ -19,14 +19,22 @@ _blend:
 	mov eax, DWORD [ebx+10] ;offset a
 	add ebx, eax    ;adres pixeli(danych) a
 	mov eax, DWORD [ebp+24] ;x
-load_x:
+;load_x:
+    cmp eax, 0
+    mov edx, 0
+    jl x_ujemny
 	imul eax, 3    ;ilosc pixeli na ilosc bajtow
 	add ebx, eax
-    push ebx    ;[ebp-12]
-
+	mov ecx, eax
+	push ebx    ;[ebp-12]
+	jmp x_ujemny_end
+x_ujemny:
+    mov edx, eax
+x_ujemny_end:
     mov ebx, DWORD [ebp+12]  ;adres poczatku b
 	mov eax, DWORD [ebx+10] ;offset b
 	add ebx, eax    ;adres pixeli(danych) b
+	sub ebx, edx
     push ebx    ;[ebp-16]
 
     mov ebx, DWORD [ebp+8]  ;adres poczatku a
@@ -40,7 +48,8 @@ load_x:
     sub eax, edx    ;padding
     push eax    ;[ebp-20]
 
-    mov ebx, DWORD [ebp-12]  ;adres danych a
+    mov ebx, DWORD [ebp+8]  ;adres poczatku a
+	add ebx, DWORD [ebx+10] ;offset a
     add ebx, edx    ;adres ostatniego bajtu pixeli w lini
     push ebx    ;[ebp-24]
 
@@ -58,29 +67,42 @@ load_x:
     mov ebx, DWORD [ebp-16]  ;adres danych b
     add ebx, edx    ;adres ostatniego bajtu pixeli w lini
     push ebx    ;[ebp-32]
-
+;szerokosc:
     mov ebx, DWORD [ebp+8]  ;adres poczatku a
     mov eax, DWORD [ebx+18]  ;szerokosc a
     imul eax, 3 ;zamiana szerokosci, pixele na bajty
     push eax    ;[ebp-36]
-    mov edx, DWORD [ebp-24] ;padding a
+    mov edx, DWORD [ebp-20] ;padding a
+;wez_padding:
     add eax, edx    ;dlugosc lini z paddingiem
-load_y:
     mov edx, [ebp+28]   ;y
+;load_y:
+    cmp edx, 0
+    jl y_minus
     imul eax, edx   ;przesuniecie w pionie
     mov	ebx, DWORD [ebp-12] ;poczatek danych a
     add ebx, eax    ;adres po przesunieciu w dol
     mov [ebp-12], ebx
-
+    add ecx, eax
+    mov ebx, DWORD [ebp+8]  ;adres poczatku a
+	mov eax, DWORD [ebx+10] ;offset a
+    add ecx, eax  ;licznik
+    jmp y_minus_end
+y_minus:
+    mov ebx, DWORD [ebp+12]  ;adres poczatku b
+    mov eax, DWORD [ebx+18]  ;szerokosc b
+    imul eax, 3 ;zamiana szerokosci, pixele na bajty
+    add eax, DWORD [ebp-28] ;szerokosc+=padding
+    imul eax, DWORD [ebp+28]    ;szerokosc*=y
+    mov ebp, DWORD [ebp-16] ;b pointer
+    sub ebp, eax
+    mov [ebp-16], ebp
+y_minus_end:
 
     mov ebx, DWORD [ebp+12]  ;adres poczatku b
     mov eax, DWORD [ebx+18]  ;szerokosc b
     imul eax, 3 ;zamiana szerokosci, pixele na bajty
     push eax    ;[ebp-40]
-
-    mov ebx, DWORD [ebp+8]  ;adres poczatku a
-	mov eax, DWORD [ebx+10] ;offset a
-    mov ecx, eax  ;licznik
 
     mov eax, 0
     push eax    ;[ebp-44]
@@ -89,17 +111,23 @@ loop1:
     mov	ebx, DWORD [ebp-12] ;poczatek danych a
     mov eax, 0
     mov al, BYTE [ebx]  ;weź bit koloru
+    mov	ebx, DWORD [ebp+20] ;poczatek danych a
+    add ebx, ecx
+    mov edx, 0
+    mov dl, BYTE [ebx]  ;weź bit koloru
+testuj:
+
+    mov	ebx, DWORD [ebp-12] ;poczatek danych a
+    mov eax, 0
+    mov al, BYTE [ebx]  ;weź bit koloru
     and eax, 0xFF    ;maska
 
     mov [ebp-44], eax
     fild DWORD [ebp-44]    ;bajt koloru na stos FPU
     fld DWORD [ebp+16] ;(float)alfa na stos FPU
     fmulp   ;mnozenie- wynik na stos FPU
-    ;fistp DWORD [ebp-44]   ;zdjecie ze stosu jako int
-    ;mov edx, DWORD [ebp-44]
 
     fld1    ;1 na stos
-    ;mov eax, DWORD [ebp+16] ;alfa
     fld DWORD [ebp+16] ;(float)alfa na stos FPU
     fsubp   ;1-alfa
 
@@ -107,20 +135,15 @@ loop1:
     mov [ebp-12], ebx
 
     mov ebx, DWORD [ebp-16] ;poczatek danych b
-    ;add ebx, ecx
     mov eax, 0
     mov al, BYTE [ebx]  ;weź bit koloru
     and eax, 0xFF    ;maska
     mov [ebp-44], eax
     fild DWORD [ebp-44]    ;bajt koloru na stos FPU
     fmulp   ;mnozenie- wynik na stos FPU
-    ;mov [ebp-44], edx
     faddp   ;dodanie
-    ;fistp DWORD [eax]   ;zdjecie ze stosu jako int
     fistp DWORD [ebp-44]   ;zdjecie ze stosu jako int
-    ;add eax, edx    ;nowa wartosc koloru
     mov eax, DWORD [ebp-44]
-
 
     inc ebx
     mov [ebp-16], ebx
@@ -133,12 +156,12 @@ loop1:
     mov eax, DWORD [ebp-12] ;aktualny wskaznik a
     mov ebx, DWORD [ebp-24] ;aktualny koniec lini
     cmp eax, ebx
-    jge przeskocz_padding
+    jg przeskocz_padding
 
     mov eax, DWORD [ebp-16] ;aktualny wskaznik b
     mov ebx, DWORD [ebp-32] ;aktualny koniec lini
     cmp eax, ebx
-    jge przeskocz_padding
+    jg przeskocz_padding
 
     mov eax, DWORD [ebp-12] ;aktualny wskaznik a
     mov ebx, DWORD [ebp-4]  ;koniec a
@@ -153,29 +176,48 @@ loop1:
     jmp koniec  ;koniec funkcji
 
 przeskocz_padding:
+    mov eax, DWORD [ebp-12] ;dane a
+    mov ebx, DWORD [ebp-24] ;aktualny koniec lini a
+    sub ebx, eax    ;tyle zostalo do konca lini
+    add ebx, DWORD [ebp-20] ;+ padding
+    add ecx, ebx
+
     mov ebx, DWORD [ebp-24] ;aktualny koniec lini a
     add ebx, DWORD [ebp-20] ;+ padding
     mov eax, DWORD [ebp+24] ;x
+    imul eax, 3    ;ilosc pixeli na ilosc bajtow
+    cmp eax, 0
+    jl bez_przesuniecia
+    add ecx, eax    ;przesuniecie o x
 	add ebx, eax
-    inc ebx
+bez_przesuniecia:
     mov [ebp-12], ebx
 
     mov ebx, DWORD [ebp-32] ;aktualny koniec lini b
     add ebx, DWORD [ebp-28] ;+ padding
-    inc ebx
+    ;inc ebx
     mov [ebp-16], ebx
 
     mov ebx, DWORD [ebp-24] ;aktualny koniec lini a
     mov eax, DWORD [ebp-36] ;dlugosc lini w bajtach
+    add eax, DWORD [ebp-20] ;+ padding
     add ebx, eax    ;nowy adres konca linii
     mov [ebp-24], ebx
 
     mov ebx, DWORD [ebp-32] ;aktualny koniec lini b
     mov eax, DWORD [ebp-40] ;dlugosc lini w bajtach
+    add eax, DWORD [ebp-28] ;+ padding
     add ebx, eax    ;nowy adres konca linii
+    mov eax, DWORD [ebp+24] ;x
+    imul eax, 3
+    cmp eax, 0
+    jge dalej
+    sub ebx, eax
+    dalej:
     mov [ebp-32], ebx
 
     jmp loop1
+
 
 
 koniec:
