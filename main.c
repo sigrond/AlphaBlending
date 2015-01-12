@@ -3,6 +3,8 @@
 #include <string.h>
 #include<X11/X.h>
 #include<X11/Xlib.h>
+#include<X11/keysym.h>
+#include<X11/Xutil.h>
 #include<GL/gl.h>
 #include<GL/glx.h>
 //#include<GL/glu.h>
@@ -11,32 +13,101 @@
 
 int blend(char* a,char* b,float c,char* d, int x, int y);
 
+long int size1, size2;
+int x=0,y=0;//w pixelach
+float alpha=0.4;
 
-Display                 *dpy;
-Window                  root;
-GLint                   att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-XVisualInfo             *vi;
-Colormap                cmap;
-XSetWindowAttributes    swa;
-Window                  win;
-GLXContext              glc;
-XWindowAttributes       gwa;
-XEvent                  xev;
+XImage *CreateTrueColorImage(Display *display, Visual *visual, unsigned char *image, int width, int height)
+{
+    int i, j;
+    unsigned char *image32=(unsigned char *)malloc(width*height*4);
+    unsigned char *p=image32;
+    int k=size1;//54;
+    int padding=((width*24+31)/32)*4-width*3;
+    //printf("padding: %d\n",padding);
+    for(i=0; i<height; i++)
+    {
+        k-=width*3+padding;
+        for(j=0; j<width; j++)
+        {
+            *p++= *(image+k++); // blue
+            *p++= *(image+k++); // green
+            *p++= *(image+k++); // red
+            p++;
+        }
+        //k+=padding;
+        k-=width*3;
+    }
+    return XCreateImage(display, visual, 24, ZPixmap, 0, image32, width, height, 32, 0);
+}
+
+void processEvent(Display *display, Window window, XImage *ximage, int width, int height)
+{
+    XEvent ev;
+    char buffer[20];
+    int bufsize = 20;
+    KeySym key;
+    XComposeStatus compose;
+    int charcount;
+    XNextEvent(display, &ev);
+    switch(ev.type)
+    {
+    case Expose:
+        printf("Expose\n");
+        XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, width, height);
+        break;
+    case KeyPress:
+        //printf("key presed\n");
+        charcount = XLookupString(&ev, buffer, bufsize, &key, &compose);
+        if(key==XK_Right)
+        {
+            if(x+10<width)
+            {
+                x+=10;
+            }
+        }
+        else if(key==XK_Left)
+        {
+            if(x-10>0)
+            {
+                x-=10;
+            }
+        }
+        else if(key==XK_Up)
+        {
+            /*if(y-10>0)
+            {
+                y-=10;
+            }*/
+            y+=10;
+        }
+        else if(key==XK_Down)
+        {
+            /*if(y+10>0)
+            {
+                y+=10;
+            }*/
+            y-=10;
+        }
+        XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, width, height);
+        break;
+    case ButtonPress:
+        exit(0);
+        break;
+    }
+}
 
 
 
 
 int main(int argc, char** argv)
 {
-    printf("start blend0");
+    //printf("start blend0");
     FILE* file1;
     FILE* file2;
-    long int size1, size2;
     char* m1;
     char* m2;
     char* result;
-    float alpha=0.4;
-    int x=0,y=0;//w pixelach
     file1=fopen("test1.bmp", "rb");
     file2=fopen("test4.bmp", "rb");
     fseek(file1,0,SEEK_END);
@@ -54,72 +125,36 @@ int main(int argc, char** argv)
     fclose(file1);
     fclose(file2);
     memcpy(result,m1,sizeof(char)*size1);
-    printf("start blend");
+    //printf("start blend");
     blend(m1,m2,alpha,result,x,y);
     file1=fopen("wynik.bmp", "wb");
     fwrite (result,sizeof(char),size1,file1);
     fclose(file1);
 
 
-    dpy = XOpenDisplay(NULL);
+    XImage *ximage;
+    int width= *((int*)(result+18));//undefined behavior, ale dziala na galerze
+    int height= *((int*)(result+22));
+    Display *display=XOpenDisplay(NULL);
+    Visual *visual=DefaultVisual(display, 0);
+    Window window=XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, width, height, 1, 0, 0);
+    if(visual->class!=TrueColor)
+    {
+        fprintf(stderr, "Cannot handle non true color visual ...\n");
+        exit(1);
+    }
 
- if(dpy == NULL) {
-        printf("\n\tcannot connect to X server\n\n");
-        exit(0);
- }
-
- root = DefaultRootWindow(dpy);
-
- vi = glXChooseVisual(dpy, 0, att);
-
- if(vi == NULL) {
-        printf("\n\tno appropriate visual found\n\n");
-        exit(0);
- }
- else {
-        printf("\n\tvisual %p selected\n", (void *)vi->visualid); /* %p creates hexadecimal output like in glxinfo */
- }
-
-
- cmap = XCreateColormap(dpy, root, vi->visual, AllocNone);
-
- swa.colormap = cmap;
- swa.event_mask = ExposureMask | KeyPressMask;
-
- win = XCreateWindow(dpy, root, 0, 0, 600, 600, 0, vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
-
- XMapWindow(dpy, win);
- XStoreName(dpy, win, "VERY SIMPLE APPLICATION");
-
-glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);
-glXMakeCurrent(dpy, win, glc);
-
-glEnable(GL_DEPTH_TEST);
-glMatrixMode(GL_MODELVIEW);
-//float mapa[10000][4];
-
- while(1) {
-        XNextEvent(dpy, &xev);
-
-        if(xev.type == Expose) {
-                XGetWindowAttributes(dpy, win, &gwa);
-                glClear( GL_COLOR_BUFFER_BIT );
-                glRasterPos2i( 0, 0 );
-                glDrawPixels(685,441,GL_RGB,GL_UNSIGNED_BYTE,result);
-                //glDrawPixels(100,100,GL_RGB,GL_FLOAT,mapa);
-                glFlush();
-
-                glXSwapBuffers(dpy, win);
-        }
-
-        else if(xev.type == KeyPress) {
-                glXMakeCurrent(dpy, None, NULL);
-                glXDestroyContext(dpy, glc);
-                XDestroyWindow(dpy, win);
-                XCloseDisplay(dpy);
-                exit(0);
-        }
-    } /* this closes while(1) { */
+    ximage=CreateTrueColorImage(display, visual, result, width, height);
+    XSelectInput(display, window, ButtonPressMask|ExposureMask|KeyPressMask);
+    XMapWindow(display, window);
+    while(1)
+    {
+        memcpy(result,m1,sizeof(char)*size1);
+        blend(m1,m2,alpha,result,x,y);
+        ximage=CreateTrueColorImage(display, visual, result, width, height);
+        processEvent(display, window, ximage, width, height);
+        XFlush(display);
+    }
 
 
     return 0;

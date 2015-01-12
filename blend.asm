@@ -3,7 +3,9 @@ global  blend
 
 blend:
     push ebp
-	mov ebp, esp
+    mov ebp, esp
+
+    mov ecx, 0
 
     mov ebx, DWORD [ebp+8]  ;adres poczatku a
     mov eax, DWORD [ebx+2]  ;rozmiar a
@@ -17,15 +19,16 @@ blend:
 
 	mov ebx, DWORD [ebp+8]  ;adres poczatku a
 	mov eax, DWORD [ebx+10] ;offset a
+	mov ecx, eax
 	add ebx, eax    ;adres pixeli(danych) a
 	mov eax, DWORD [ebp+24] ;x
 ;load_x:
-    cmp eax, 0
     mov edx, 0
+    cmp eax, 0
     jl x_ujemny
 	imul eax, 3    ;ilosc pixeli na ilosc bajtow
 	add ebx, eax
-	mov ecx, eax
+	add ecx, eax
 	push ebx    ;[ebp-12]
 	jmp x_ujemny_end
 x_ujemny:
@@ -67,42 +70,36 @@ x_ujemny_end:
     mov ebx, DWORD [ebp-16]  ;adres danych b
     add ebx, edx    ;adres ostatniego bajtu pixeli w lini
     push ebx    ;[ebp-32]
+
 ;szerokosc:
     mov ebx, DWORD [ebp+8]  ;adres poczatku a
     mov eax, DWORD [ebx+18]  ;szerokosc a
     imul eax, 3 ;zamiana szerokosci, pixele na bajty
     push eax    ;[ebp-36]
-    mov edx, DWORD [ebp-20] ;padding a
-;wez_padding:
-    add eax, edx    ;dlugosc lini z paddingiem
-    mov edx, [ebp+28]   ;y
-;load_y:
-    cmp edx, 0
-    jl y_minus
-    imul eax, edx   ;przesuniecie w pionie
-    mov	ebx, DWORD [ebp-12] ;poczatek danych a
-    add ebx, eax    ;adres po przesunieciu w dol
-    mov [ebp-12], ebx
-    add ecx, eax
-    mov ebx, DWORD [ebp+8]  ;adres poczatku a
-	mov eax, DWORD [ebx+10] ;offset a
-    add ecx, eax  ;licznik
-    jmp y_minus_end
-y_minus:
-    mov ebx, DWORD [ebp+12]  ;adres poczatku b
-    mov eax, DWORD [ebx+18]  ;szerokosc b
-    imul eax, 3 ;zamiana szerokosci, pixele na bajty
-    add eax, DWORD [ebp-28] ;szerokosc+=padding
-    imul eax, DWORD [ebp+28]    ;szerokosc*=y
-    mov ebp, DWORD [ebp-16] ;b pointer
-    sub ebp, eax
-    mov [ebp-16], ebp
-y_minus_end:
 
     mov ebx, DWORD [ebp+12]  ;adres poczatku b
     mov eax, DWORD [ebx+18]  ;szerokosc b
     imul eax, 3 ;zamiana szerokosci, pixele na bajty
     push eax    ;[ebp-40]
+
+    mov eax, DWORD [ebp+28] ;y
+    cmp eax, 0
+    jl y_minus
+    mov ebx, DWORD [ebp+8]  ;adres poczatku a
+    mov edx, DWORD [ebx+18]  ;szerokosc a
+    imul edx, 3
+    add edx, DWORD [ebp-20] ;padding
+    imul eax, edx   ;przesuniecie
+    add ecx, eax
+    mov	ebx, DWORD [ebp-12] ;poczatek danych a
+    add ebx, eax
+    mov [ebp-12], ebx
+    mov	ebx, DWORD [ebp-24] ;koniec lini
+    add ebx, eax
+    mov [ebp-24], ebx
+    jmp y_minus_end
+y_minus:
+y_minus_end:
 
     mov eax, 0
     push eax    ;[ebp-44]
