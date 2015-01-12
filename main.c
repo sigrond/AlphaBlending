@@ -68,7 +68,7 @@ void processEvent(Display *display, Window window, XImage *ximage, int width, in
         }
         else if(key==XK_Left)
         {
-            if(x-10>0)
+            if(x-10>=0)
             {
                 x-=10;
             }
