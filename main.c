@@ -5,8 +5,8 @@
 #include<X11/Xlib.h>
 #include<X11/keysym.h>
 #include<X11/Xutil.h>
-#include<GL/gl.h>
-#include<GL/glx.h>
+//#include<GL/gl.h>
+//#include<GL/glx.h>
 //#include<GL/glu.h>
 
 
@@ -44,6 +44,7 @@ XImage *CreateTrueColorImage(Display *display, Visual *visual, unsigned char *im
 void processEvent(Display *display, Window window, XImage *ximage, int width, int height)
 {
     XEvent ev;
+    XEvent exppp;
     char buffer[20];
     int bufsize = 20;
     KeySym key;
@@ -53,7 +54,7 @@ void processEvent(Display *display, Window window, XImage *ximage, int width, in
     switch(ev.type)
     {
     case Expose:
-        printf("Expose\n");
+        //printf("Expose\n");
         XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, width, height);
         break;
     case KeyPress:
@@ -75,24 +76,39 @@ void processEvent(Display *display, Window window, XImage *ximage, int width, in
         }
         else if(key==XK_Up)
         {
-            /*if(y-10>0)
-            {
-                y-=10;
-            }*/
             y+=10;
         }
         else if(key==XK_Down)
         {
-            /*if(y+10>0)
-            {
-                y+=10;
-            }*/
             y-=10;
         }
-        XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, width, height);
+        else if(key==XK_plus)
+        {
+            if(alpha+0.05<=1.0)
+            alpha+=0.05;
+            else
+            alpha=1.0;
+        }
+        else if(key==XK_minus)
+        {
+            if(alpha-0.05>=0)
+            alpha-=0.05;
+            else
+            alpha=0.0;
+        }
+        else if(key==XK_Escape)
+        {
+            exit(0);
+        }
+        //XPutImage(display, window, DefaultGC(display, 0), ximage, 0, 0, 0, 0, width, height);
+        memset(&exppp, 0, sizeof(exppp));
+        exppp.type = Expose;
+        exppp.xexpose.window = window;
+        XSendEvent(display,window,False,ExposureMask,&exppp);
+        XFlush(display);
         break;
     case ButtonPress:
-        exit(0);
+        //exit(0);
         break;
     }
 }
