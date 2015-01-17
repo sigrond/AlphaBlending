@@ -29,10 +29,10 @@ blend:
 	imul eax, 3    ;ilosc pixeli na ilosc bajtow
 	add ebx, eax
 	add ecx, eax
-	push ebx    ;[ebp-12]
+	push ebx    ;[ebp-12] -poczatek danych a
 	jmp x_ujemny_end
 x_ujemny:
-    mov edx, eax
+    push ebx    ;[ebp-12] -poczatek danych a
 x_ujemny_end:
     mov ebx, DWORD [ebp+12]  ;adres poczatku b
 	mov eax, DWORD [ebx+10] ;offset b

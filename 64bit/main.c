@@ -13,11 +13,13 @@
 
 int blend(char* a,char* b,double c,char* d, long x, long y);
 
+#define KROK 10
 long int size1, size2;
 long x=0,y=0;//w pixelach
 double alpha=0.4;
 
-XImage *CreateTrueColorImage(Display *display, Visual *visual, unsigned char *image, int width, int height)
+XImage *CreateTrueColorImage(Display *display, Visual *visual, unsigned char *image,
+                             int width, int height)
 {
     int i, j;
     unsigned char *image32=(unsigned char *)malloc(width*height*4);
@@ -41,7 +43,8 @@ XImage *CreateTrueColorImage(Display *display, Visual *visual, unsigned char *im
     return XCreateImage(display, visual, 24, ZPixmap, 0, image32, width, height, 32, 0);
 }
 
-void processEvent(Display *display, Window window, XImage *ximage, int width, int height)
+void processEvent(Display *display, Window window, XImage *ximage,
+                  int width, int height, int width2, int height2)
 {
     XEvent ev;
     XEvent exppp;
@@ -59,28 +62,35 @@ void processEvent(Display *display, Window window, XImage *ximage, int width, in
         break;
     case KeyPress:
         //printf("key presed\n");
-        charcount = XLookupString(&ev, buffer, bufsize, &key, &compose);
+        charcount = XLookupString((void*)&ev,
+                                   buffer, bufsize, &key, &compose);
         if(key==XK_Right)
         {
-            if(x+10<width)
+            if(x+KROK<=width-width2)
             {
-                x+=10;
+                x+=KROK;
             }
         }
         else if(key==XK_Left)
         {
-            if(x-10>=0)
+            if(x-KROK>=0)
             {
-                x-=10;
+                x-=KROK;
             }
         }
         else if(key==XK_Up)
         {
-            y+=10;
+            if(y+KROK<=height-height2)
+            {
+                y+=KROK;
+            }
         }
         else if(key==XK_Down)
         {
-            y-=10;
+            if(y-KROK>=0)
+            {
+                y-=KROK;
+            }
         }
         else if(key==XK_plus)
         {
@@ -118,8 +128,9 @@ void processEvent(Display *display, Window window, XImage *ximage, int width, in
 
 int main(int argc, char** argv)
 {
-    printf("char*: %d, short: %d, int: %d, long: %d, long long: %d, float: %d, double: %d\n",
-           sizeof(char*),sizeof(short),sizeof(int),sizeof(long),sizeof(long long),sizeof(float),sizeof(double));
+    /*printf("char*: %d, short: %d, int: %d, long: %d, long long: %d, float: %d, double: %d, long double: %d\n",
+           sizeof(char*),sizeof(short),sizeof(int),sizeof(long),sizeof(long long),sizeof(float),sizeof(double),sizeof(long double));
+    */
     FILE* file1;
     FILE* file2;
     char* m1;
@@ -142,16 +153,18 @@ int main(int argc, char** argv)
     fclose(file1);
     fclose(file2);
     memcpy(result,m1,sizeof(char)*size1);
-    //printf("start blend");
-    blend(m1,m2,alpha,result,x,y);
-    file1=fopen("wynik.bmp", "wb");
+    printf("start blend");
+    //blend(m1,m2,alpha,result,x,y);
+    /*file1=fopen("wynik.bmp", "wb");
     fwrite (result,sizeof(char),size1,file1);
-    fclose(file1);
+    fclose(file1);*/
 
 
     XImage *ximage;
     int width= *((int*)(result+18));//undefined behavior, ale dziala na galerze
     int height= *((int*)(result+22));
+    int width2= *((int*)(m2+18));
+    int height2= *((int*)(m2+22));
     Display *display=XOpenDisplay(NULL);
     Visual *visual=DefaultVisual(display, 0);
     Window window=XCreateSimpleWindow(display, RootWindow(display, 0), 0, 0, width, height, 1, 0, 0);
@@ -169,7 +182,7 @@ int main(int argc, char** argv)
         memcpy(result,m1,sizeof(char)*size1);
         blend(m1,m2,alpha,result,x,y);
         ximage=CreateTrueColorImage(display, visual, result, width, height);
-        processEvent(display, window, ximage, width, height);
+        processEvent(display, window, ximage, width, height, width2, height2);
         XFlush(display);
     }
 
