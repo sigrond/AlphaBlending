@@ -4,9 +4,11 @@
 	<Project>
 		<Option title="alfablending64bit" />
 		<Option makefile="makefile" />
+		<Option makefile_is_custom="1" />
 		<Option pch_mode="2" />
 		<Option compiler="cygwin" />
 		<Build>
+			<Script file="lib_finder.script" />
 			<Target title="Debug">
 				<Option output="bin/Debug/alfablending64bit" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
@@ -29,6 +31,11 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="blend.asm" />
+		<Unit filename="main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="makefile" />
 		<Extensions>
 			<code_completion />
 			<envvars />
